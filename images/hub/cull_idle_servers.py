@@ -248,9 +248,9 @@ def cull_idle(url, api_token, inactive_limit, cull_users=False, exclude_users_fr
             # which introduces the 'created' field which is never None
             inactive = age
 
-        should_cull = (inactive is not None and
-                       not exclude_user_from_culling and
-                       inactive.total_seconds() >= inactive_limit)
+        should_cull = ((inactive is not None) and
+                       (not exclude_user_from_culling) and
+                       (inactive.total_seconds() >= inactive_limit))
         if should_cull:
             app_log.info(
                 "Culling user %s (inactive for %s)",
