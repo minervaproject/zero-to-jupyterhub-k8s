@@ -249,7 +249,7 @@ def cull_idle(url, api_token, inactive_limit, cull_users=False, exclude_users_fr
             inactive = age
 
         should_cull = (inactive is not None and
-                       not exclude_users_from_culling and
+                       not exclude_user_from_culling and
                        inactive.total_seconds() >= inactive_limit)
         if should_cull:
             app_log.info(
