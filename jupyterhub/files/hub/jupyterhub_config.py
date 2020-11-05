@@ -404,6 +404,10 @@ if get_config('cull.enabled', False):
     if cull_max_age:
         cull_cmd.append('--max-age=%s' % cull_max_age)
 
+    exclude_users_from_culling = get_config('cull.excludeUsersFromCulling')
+    if exclude_users_from_culling:
+        cull_cmd.append('--exclude-users-from-culling=%s' % exclude_users_from_culling)
+
     c.JupyterHub.services.append({
         'name': 'cull-idle',
         'admin': True,

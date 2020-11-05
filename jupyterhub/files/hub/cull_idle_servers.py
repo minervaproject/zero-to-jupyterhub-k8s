@@ -85,13 +85,15 @@ def cull_idle(
     api_token,
     inactive_limit,
     cull_users=False,
+    exclude_users_from_culling=[],
     remove_named_servers=False,
     max_age=0,
     concurrency=10,
 ):
     """Shutdown idle single-user servers
 
-    If cull_users, inactive *users* will be deleted as well.
+    If cull_users, inactive *users* will be deleted as well unless their user
+    name is in exclude_users_from_culling.
     """
     auth_header = {
         'Authorization': 'token %s' % api_token,
@@ -142,6 +144,8 @@ def cull_idle(
             # started may be undefined on jupyterhub < 0.9
             age = None
 
+        exclude_user_from_culling = user['name'] in exclude_users_from_culling
+
         # check last activity
         # last_activity can be None in 0.9
         if server['last_activity']:
@@ -153,8 +157,10 @@ def cull_idle(
             # for running servers
             inactive = age
 
-        should_cull = (inactive is not None and
-                       inactive.total_seconds() >= inactive_limit)
+        should_cull = ((inactive is not None) and
+                       (not exclude_user_from_culling) and
+                       (inactive.total_seconds() >= inactive_limit))
+
         if should_cull:
             app_log.info(
                 "Culling server %s (inactive for %s)",
@@ -324,6 +330,9 @@ if __name__ == '__main__':
            help="""Cull users in addition to servers.
                 This is for use in temporary-user cases such as BinderHub.""",
            )
+    define('exclude_users_from_culling', default=None,
+           help="""Exclude culling these users. May be comma-separated""",
+           )
     define('remove_named_servers', default=False,
            help="""Remove named servers in addition to stopping them.
                 This is useful for a BinderHub that uses authentication and named servers.""",
@@ -341,6 +350,11 @@ if __name__ == '__main__':
         options.cull_every = options.timeout // 2
     api_token = os.environ['JUPYTERHUB_API_TOKEN']
 
+    if options.exclude_users_from_culling:
+        exclude_users_from_culling = options.exclude_users_from_culling.split(',')
+    else:
+        exclude_users_from_culling = []
+
     try:
         AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
     except ImportError as e:
@@ -356,6 +370,7 @@ if __name__ == '__main__':
         api_token=api_token,
         inactive_limit=options.timeout,
         cull_users=options.cull_users,
+        exclude_users_from_culling=exclude_users_from_culling,
         remove_named_servers=options.remove_named_servers,
         max_age=options.max_age,
         concurrency=options.concurrency,
